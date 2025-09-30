@@ -24,12 +24,16 @@ export function renderTemplate(template: string, context: TemplateContext): stri
 
   output = output.replace(/{{#each linearTickets}}([\s\S]*?){{\/each}}/g, (_, block: string) =>
     context.linearTickets
-      .map((ticket) =>
-        block
+      .map((ticket) => {
+        // If URL is missing, render identifier without link
+        const urlReplacement = ticket.url
+          ? ticket.url
+          : `https://linear.app/issue/${ticket.identifier}`; // Use Linear's URL pattern as fallback
+        return block
           .replaceAll('{{identifier}}', ticket.identifier)
-          .replaceAll('{{url}}', ticket.url ?? '#')
-          .replaceAll('{{title}}', ticket.title)
-      )
+          .replaceAll('{{url}}', urlReplacement)
+          .replaceAll('{{title}}', ticket.title);
+      })
       .join('')
   );
 

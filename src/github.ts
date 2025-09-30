@@ -23,14 +23,23 @@ async function getGhAuthToken(): Promise<string> {
 }
 
 let octokitInstance: Promise<Octokit> | undefined;
+let cachedToken: string | undefined;
 
 async function getOctokit(): Promise<Octokit> {
+  const currentToken = await getGhAuthToken();
+
+  // Reset the singleton if the token has changed
+  if (cachedToken && cachedToken !== currentToken) {
+    octokitInstance = undefined;
+  }
+
   if (!octokitInstance) {
+    cachedToken = currentToken;
     octokitInstance = (async () => {
-      const token = await getGhAuthToken();
-      return new Octokit({ auth: token });
+      return new Octokit({ auth: currentToken });
     })().catch((error) => {
       octokitInstance = undefined;
+      cachedToken = undefined;
       throw error;
     });
   }
@@ -71,12 +80,16 @@ export async function fetchGitHubIssues(repo: string, labels: string[]): Promise
   const octokit = await getOctokit();
   const normalizedLabels = normalizeLabels(labels);
 
+  // Note: GitHub's API uses OR logic for labels parameter, but we filter for AND logic below
+  // This means we fetch more issues than needed, then filter locally
+  // To optimize, consider fetching without label filter and filtering all locally,
+  // or accept the OR behavior if that's desired
   const issues = await octokit.paginate(octokit.issues.listForRepo, {
     owner,
     repo: repoName,
     state: 'all',
     per_page: 100,
-    labels: labels.length > 0 ? labels.join(',') : undefined,
+    // Omit labels parameter to fetch all issues and filter locally for consistent AND logic
   });
 
   return issues
