@@ -1,0 +1,30 @@
+{
+  "name": "linear-roadmap-sync",
+  "version": "0.1.0",
+  "description": "Skeleton TypeScript CLI for generating roadmap markdown files from Linear and GitHub",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "bin": {
+    "linear-roadmap-sync": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "lint": "tsc --noEmit",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@linear/sdk": "^60.0.0",
+    "@octokit/rest": "^22.0.0",
+    "commander": "^14.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}
