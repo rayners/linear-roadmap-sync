@@ -109,3 +109,9 @@ linear-roadmap-sync \
 - **Label filtering is AND logic**: All specified tags/labels must be present (differs from GitHub's default OR behavior)
 - **Template engine**: Uses Handlebars for full template support including conditionals and nested object access
 - **Issue linking**: Linear tickets with GitHub issue attachments are automatically merged in roadmap output
+
+## Documentation and Commit Message Standards
+
+- **Avoid hyperbolic language**: Don't use words like "comprehensive", "robust", "complete", "fully", "extensive" in commit messages and documentation
+- **Be specific and accurate**: State exactly what was done (e.g., "37 tests" not "comprehensive test suite")
+- **Honest assessment**: Describe actual capabilities without exaggeration (e.g., "tested with D&D 5e, PF2e" not "works with all systems")
