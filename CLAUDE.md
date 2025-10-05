@@ -38,6 +38,18 @@ A TypeScript CLI tool that generates Markdown roadmap files by aggregating Linea
 **Team Resolution** (src/linear.ts:21-35):
 Accepts team identifier in three formats: team ID, team key, or team name (case-insensitive)
 
+**Linear/GitHub Issue Linking** (src/index.ts:37-61):
+- Linear tickets with GitHub issue attachments are automatically detected via URL pattern matching
+- Linked items are merged into single roadmap entries displaying both identifiers
+- URL validation uses regex: `/^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/`
+- Supports repository names with dots and special characters
+- Unlinked GitHub issues appear as separate entries
+
+**PR State Filtering** (src/index.ts:28-35):
+- Filter by `open`, `closed`, `merged`, or `all` via `--github-pr-state` flag
+- Default: `open` (excludes merged PRs)
+- Merged PRs detected by `merged` field, not state alone
+
 ## Common Commands
 
 ### Build and Type-Check
@@ -56,8 +68,15 @@ linear-roadmap-sync \
   --linear-tag roadmap \
   --github-repo owner/repo \
   --github-tag roadmap \
+  --github-pr-state open \
   --dry-run
 ```
+
+**Key Options:**
+- `--github-pr-state <state>` - Filter PRs by state: `open` (default), `closed`, `merged`, or `all`
+- `--dry-run` - Preview output without writing to file
+- `--output-file <file>` - Specify output location (default: ROADMAP.md)
+- `--template-file <file>` - Use custom Handlebars template
 
 ## TypeScript Configuration Notes
 

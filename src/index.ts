@@ -35,7 +35,7 @@ async function run(options: SyncOptions): Promise<void> {
   });
 
   // Merge Linear tickets with linked GitHub issues
-  const githubIssueUrlPattern = /^https:\/\/github\.com\/[\w-]+\/[\w-]+\/issues\/\d+$/;
+  const githubIssueUrlPattern = /^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/;
   const linkedIssueUrls = new Set<string>();
   const mergedItems: MergedRoadmapItem[] = linearTickets.map((ticket) => {
     // Check if this Linear ticket has a GitHub issue attachment
