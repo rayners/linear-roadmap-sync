@@ -15,7 +15,10 @@
     "build": "tsc",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@linear/sdk": "^60.0.0",
@@ -26,7 +29,9 @@
   },
   "devDependencies": {
     "@types/node": "^24.5.2",
+    "@vitest/ui": "^3.2.4",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   }
 }
