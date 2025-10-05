@@ -16,20 +16,42 @@ A skeleton TypeScript command line tool that reads Linear tickets, GitHub issues
 
 - Node.js 18+
 - [GitHub CLI (`gh`)](https://cli.github.com/) authenticated with access to the target repository (the CLI's stored token is reused for Octokit requests)
-- Linear API key with access to the target workspace (export as `LINEAR_API_KEY` or pass via CLI)
+  - Install: `brew install gh` (macOS) or see [installation guide](https://github.com/cli/cli#installation)
+  - Authenticate: `gh auth login`
+- Linear API key with access to the target workspace
+  - Create an API key at: https://linear.app/settings/api
+  - Export as `LINEAR_API_KEY` environment variable or pass via `--linear-api-key` flag
 
 ## Installation
 
 ```bash
 npm install
 npm run build
+npm link  # Creates global `linear-roadmap-sync` command
 ```
 
-For local development you can link the CLI:
+## Quick Start
 
-```bash
-npm link
-```
+1. **Set up your Linear API key:**
+   ```bash
+   export LINEAR_API_KEY="lin_api_..."
+   ```
+
+2. **Run a dry-run test:**
+   ```bash
+   linear-roadmap-sync \
+     --linear-team FOU \
+     --github-repo rayners/linear-roadmap-sync \
+     --dry-run
+   ```
+
+3. **Generate a roadmap file:**
+   ```bash
+   linear-roadmap-sync \
+     --linear-team FOU \
+     --github-repo rayners/linear-roadmap-sync \
+     --output-file ROADMAP.md
+   ```
 
 ## Usage
 
