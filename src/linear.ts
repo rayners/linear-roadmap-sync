@@ -84,16 +84,20 @@ export async function fetchLinearTickets(teamIdentifier: string, tags: string[],
       }
 
       const statePromise = issue.state;
-      const state = statePromise ? (await statePromise)?.name : undefined;
+      const stateObject = statePromise ? await statePromise : undefined;
+      const stateName = stateObject?.name;
+      const workflowStateType = stateObject?.type as 'backlog' | 'unstarted' | 'started' | 'completed' | 'canceled' | 'triage' | undefined;
 
       const ticket: LinearTicket = {
         id: issue.id,
         identifier: issue.identifier,
         title: issue.title,
         url: issue.url ?? undefined,
+        priority: issue.priority ?? undefined,
         tags: labelNames,
         attachments,
-        ...(state ? { state } : {}),
+        ...(stateName ? { state: stateName } : {}),
+        ...(workflowStateType ? { workflowState: workflowStateType } : {}),
       };
 
       return ticket;

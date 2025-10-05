@@ -4,7 +4,7 @@ import { Command } from 'commander';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { fetchGitHubIssues, fetchGitHubPullRequests } from './github';
+import { createGitHubIssue, fetchGitHubIssues, fetchGitHubPullRequests } from './github';
 import { fetchLinearTickets } from './linear';
 import { loadTemplate, renderTemplate } from './template';
 import { MergedRoadmapItem, SyncOptions, TemplateContext } from './types';
@@ -34,6 +34,29 @@ async function run(options: SyncOptions): Promise<void> {
     return true;
   });
 
+  // Create GitHub issues for Linear tickets without links (if requested)
+  let updatedGithubIssues = [...githubIssues];
+  if (options.createGithubIssues && !options.dryRun) {
+    for (const ticket of linearTickets) {
+      const githubIssueUrlPattern = /^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/;
+      const hasGithubLink = ticket.attachments?.some((att) => githubIssueUrlPattern.test(att.url));
+
+      if (!hasGithubLink) {
+        process.stdout.write(`Creating GitHub issue for ${ticket.identifier}: ${ticket.title}\n`);
+        const body = `Linear ticket: ${ticket.url}\n\nState: ${ticket.state ?? 'Unknown'}\nPriority: ${ticket.priority ?? 'None'}`;
+        const newIssue = await createGitHubIssue(
+          options.githubRepo,
+          ticket.title,
+          body,
+          options.githubTags
+        );
+        updatedGithubIssues.push(newIssue);
+        process.stdout.write(`  Created: ${newIssue.url}\n`);
+        process.stdout.write(`  Note: Link this GitHub issue back to Linear ticket manually at ${ticket.url}\n`);
+      }
+    }
+  }
+
   // Merge Linear tickets with linked GitHub issues
   const githubIssueUrlPattern = /^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/;
   const linkedIssueUrls = new Set<string>();
@@ -45,7 +68,7 @@ async function run(options: SyncOptions): Promise<void> {
 
     if (githubAttachment) {
       // Find matching GitHub issue by URL
-      const linkedIssue = githubIssues.find((issue) => issue.url === githubAttachment.url);
+      const linkedIssue = updatedGithubIssues.find((issue) => issue.url === githubAttachment.url);
       if (linkedIssue) {
         linkedIssueUrls.add(linkedIssue.url);
         return { linearTicket: ticket, githubIssue: linkedIssue, title: ticket.title };
@@ -56,9 +79,32 @@ async function run(options: SyncOptions): Promise<void> {
   });
 
   // Add unlinked GitHub issues
-  const unlinkedIssues = githubIssues.filter((issue) => !linkedIssueUrls.has(issue.url));
+  const unlinkedIssues = updatedGithubIssues.filter((issue) => !linkedIssueUrls.has(issue.url));
   unlinkedIssues.forEach((issue) => {
     mergedItems.push({ githubIssue: issue, title: issue.title });
+  });
+
+  // Sort by priority (lower priority value = higher priority)
+  // Items with priority=0 or undefined appear last
+  mergedItems.sort((a, b) => {
+    const aPriority = a.linearTicket?.priority;
+    const bPriority = b.linearTicket?.priority;
+
+    // Treat priority=0 as "no priority" (same as undefined)
+    const aHasPriority = aPriority !== undefined && aPriority > 0;
+    const bHasPriority = bPriority !== undefined && bPriority > 0;
+
+    // Both have priority: sort by priority value (lower = higher priority)
+    if (aHasPriority && bHasPriority) {
+      return aPriority - bPriority;
+    }
+
+    // Items with priority come before items without priority
+    if (aHasPriority && !bHasPriority) return -1;
+    if (!aHasPriority && bHasPriority) return 1;
+
+    // Both no priority: maintain original order
+    return 0;
   });
 
   const context: TemplateContext = {
@@ -95,6 +141,7 @@ export async function main(argv: string[] = process.argv): Promise<void> {
     .option('--github-pr-state <state>', 'Filter GitHub PRs by state: all, open, closed, merged', 'open')
     .option('-o, --output-file <file>', 'Destination markdown file', 'ROADMAP.md')
     .option('-p, --template-file <file>', 'Optional template file to override the built-in roadmap template')
+    .option('--create-github-issues', 'Create GitHub issues for Linear tickets without linked issues', false)
     .option('--dry-run', 'Print the generated roadmap instead of writing to disk', false)
     .showHelpAfterError();
 
@@ -121,6 +168,7 @@ export async function main(argv: string[] = process.argv): Promise<void> {
     outputFile: opts.outputFile,
     templateFile: opts.templateFile,
     dryRun: Boolean(opts.dryRun),
+    createGithubIssues: Boolean(opts.createGithubIssues),
   };
 
   try {
