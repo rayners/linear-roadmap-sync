@@ -40,6 +40,18 @@ async function fetchIssueLabels(issue: Issue) {
   return labels.map((label) => label.name).filter((name): name is string => Boolean(name));
 }
 
+async function fetchIssueAttachments(issue: Issue): Promise<Array<{ url: string; title?: string; subtitle?: string }>> {
+  const attachmentsConnection = await issue.attachments({ first: 50 });
+  const attachments = await collectAllNodes(attachmentsConnection);
+  return attachments
+    .filter((att) => Boolean(att.url))
+    .map((attachment) => ({
+      url: attachment.url as string,
+      ...(attachment.title ? { title: attachment.title } : {}),
+      ...(attachment.subtitle ? { subtitle: attachment.subtitle } : {}),
+    }));
+}
+
 export async function fetchLinearTickets(teamIdentifier: string, tags: string[], apiKey: string): Promise<LinearTicket[]> {
   const client = new LinearClient({ apiKey });
   const team = await resolveLinearTeam(client, teamIdentifier);
@@ -58,7 +70,10 @@ export async function fetchLinearTickets(teamIdentifier: string, tags: string[],
 
   const tickets = await Promise.all(
     issues.map(async (issue): Promise<LinearTicket | null> => {
-      const labelNames = await fetchIssueLabels(issue);
+      const [labelNames, attachments] = await Promise.all([
+        fetchIssueLabels(issue),
+        fetchIssueAttachments(issue),
+      ]);
       const normalizedIssueLabels = labelNames.map((label) => label.toLowerCase());
 
       if (
@@ -77,6 +92,7 @@ export async function fetchLinearTickets(teamIdentifier: string, tags: string[],
         title: issue.title,
         url: issue.url ?? undefined,
         tags: labelNames,
+        attachments,
         ...(state ? { state } : {}),
       };
 

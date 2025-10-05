@@ -5,6 +5,11 @@ export interface LinearTicket {
   url?: string;
   state?: string;
   tags?: string[];
+  attachments?: Array<{
+    url: string;
+    title?: string;
+    subtitle?: string;
+  }>;
 }
 
 export interface GitHubIssueSummary {
@@ -26,10 +31,16 @@ export interface RoadmapSection {
   items: string[];
 }
 
+export type MergedRoadmapItem =
+  | { linearTicket: LinearTicket; githubIssue: GitHubIssueSummary; title: string }
+  | { linearTicket: LinearTicket; githubIssue?: never; title: string }
+  | { linearTicket?: never; githubIssue: GitHubIssueSummary; title: string };
+
 export interface RoadmapData {
   linearTickets: LinearTicket[];
   githubIssues: GitHubIssueSummary[];
   githubPulls: GitHubPullRequestSummary[];
+  mergedItems: MergedRoadmapItem[];
 }
 
 export interface TemplateContext extends RoadmapData {
@@ -43,6 +54,7 @@ export interface SyncOptions {
   linearTags: string[];
   githubRepo: string;
   githubTags: string[];
+  githubPrState: 'all' | 'open' | 'closed' | 'merged';
   outputFile: string;
   templateFile?: string;
   dryRun: boolean;
