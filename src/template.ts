@@ -30,7 +30,11 @@ export async function loadTemplate(templateFile?: string): Promise<string> {
 }
 
 export function renderTemplate(template: string, context: TemplateContext): string {
-  const compiled = Handlebars.compile(template);
+  const compiled = Handlebars.compile(template, {
+    strict: true,
+    noEscape: false,
+    assumeObjects: true,
+  });
   return compiled({
     ...context,
     generatedAt: context.generatedAt.toISOString(),

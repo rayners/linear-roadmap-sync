@@ -76,4 +76,5 @@ linear-roadmap-sync \
 
 - **Read-only operations**: Tool never modifies or deletes remote resources
 - **Label filtering is AND logic**: All specified tags/labels must be present (differs from GitHub's default OR behavior)
-- **Template engine is intentional**: Current implementation uses simple string replacement rather than a full template engine to keep the skeleton lightweight
+- **Template engine**: Uses Handlebars for full template support including conditionals and nested object access
+- **Issue linking**: Linear tickets with GitHub issue attachments are automatically merged in roadmap output
