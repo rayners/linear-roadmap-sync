@@ -4,6 +4,8 @@ export interface LinearTicket {
   title: string;
   url?: string;
   state?: string;
+  workflowState?: 'backlog' | 'unstarted' | 'started' | 'completed' | 'canceled' | 'triage';
+  priority?: number;
   tags?: string[];
   attachments?: Array<{
     url: string;
@@ -58,4 +60,5 @@ export interface SyncOptions {
   outputFile: string;
   templateFile?: string;
   dryRun: boolean;
+  createGithubIssues: boolean;
 }

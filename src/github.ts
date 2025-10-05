@@ -144,3 +144,33 @@ export async function fetchGitHubPullRequests(repo: string, labels: string[]): P
       merged: Boolean(pull.merged_at),
     }));
 }
+
+export async function createGitHubIssue(
+  repo: string,
+  title: string,
+  body: string,
+  labels: string[]
+): Promise<GitHubIssueSummary> {
+  const { owner, repo: repoName } = parseRepo(repo);
+  const octokit = await getOctokit();
+
+  const response = await octokit.issues.create({
+    owner,
+    repo: repoName,
+    title,
+    body,
+    labels: labels.filter((l) => l.trim().length > 0),
+  });
+
+  const issue = response.data;
+  const issueLabels = extractLabelNames(issue.labels as Array<{ name?: string } | string> | undefined);
+
+  return {
+    id: issue.id,
+    number: issue.number,
+    title: issue.title ?? '',
+    url: issue.html_url ?? '',
+    state: issue.state as GitHubIssueSummary['state'],
+    labels: issueLabels,
+  };
+}
