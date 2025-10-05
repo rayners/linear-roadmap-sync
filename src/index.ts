@@ -17,13 +17,22 @@ function collect(value: string, previous: string[]): string[] {
   return [...previous, value];
 }
 
+// GitHub issue URL pattern used for detecting linked issues
+const GITHUB_ISSUE_URL_PATTERN = /^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/;
+
 async function run(options: SyncOptions): Promise<void> {
-  const [linearTickets, githubIssues, allGithubPulls, template] = await Promise.all([
+  const [allLinearTickets, githubIssues, allGithubPulls, template] = await Promise.all([
     fetchLinearTickets(options.linearTeam, options.linearTags, options.linearApiKey),
     fetchGitHubIssues(options.githubRepo, options.githubTags),
     fetchGitHubPullRequests(options.githubRepo, options.githubTags),
     loadTemplate(options.templateFile),
   ]);
+
+  // Filter out completed and canceled Linear tickets
+  const linearTickets = allLinearTickets.filter((ticket) => {
+    const state = ticket.workflowState;
+    return state !== 'completed' && state !== 'canceled';
+  });
 
   // Filter PRs by state
   const githubPulls = allGithubPulls.filter((pr) => {
@@ -37,11 +46,15 @@ async function run(options: SyncOptions): Promise<void> {
   // Create GitHub issues for Linear tickets without links (if requested)
   let updatedGithubIssues = [...githubIssues];
   if (options.createGithubIssues && !options.dryRun) {
-    for (const ticket of linearTickets) {
-      const githubIssueUrlPattern = /^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/;
-      const hasGithubLink = ticket.attachments?.some((att) => githubIssueUrlPattern.test(att.url));
+    // Find tickets without GitHub links
+    const ticketsNeedingIssues = linearTickets.filter((ticket) => {
+      const hasGithubLink = ticket.attachments?.some((att) => GITHUB_ISSUE_URL_PATTERN.test(att.url));
+      return !hasGithubLink;
+    });
 
-      if (!hasGithubLink) {
+    // Create issues in parallel with error handling
+    const issueCreationPromises = ticketsNeedingIssues.map(async (ticket) => {
+      try {
         process.stdout.write(`Creating GitHub issue for ${ticket.identifier}: ${ticket.title}\n`);
         const body = `Linear ticket: ${ticket.url}\n\nState: ${ticket.state ?? 'Unknown'}\nPriority: ${ticket.priority ?? 'None'}`;
         const newIssue = await createGitHubIssue(
@@ -50,20 +63,27 @@ async function run(options: SyncOptions): Promise<void> {
           body,
           options.githubTags
         );
-        updatedGithubIssues.push(newIssue);
         process.stdout.write(`  Created: ${newIssue.url}\n`);
         process.stdout.write(`  Note: Link this GitHub issue back to Linear ticket manually at ${ticket.url}\n`);
+        return newIssue;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        process.stderr.write(`  Failed to create issue for ${ticket.identifier}: ${message}\n`);
+        return null;
       }
-    }
+    });
+
+    const createdIssues = await Promise.all(issueCreationPromises);
+    const successfulIssues = createdIssues.filter((issue): issue is NonNullable<typeof issue> => issue !== null);
+    updatedGithubIssues.push(...successfulIssues);
   }
 
   // Merge Linear tickets with linked GitHub issues
-  const githubIssueUrlPattern = /^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/;
   const linkedIssueUrls = new Set<string>();
   const mergedItems: MergedRoadmapItem[] = linearTickets.map((ticket) => {
     // Check if this Linear ticket has a GitHub issue attachment
     const githubAttachment = ticket.attachments?.find((att) =>
-      githubIssueUrlPattern.test(att.url)
+      GITHUB_ISSUE_URL_PATTERN.test(att.url)
     );
 
     if (githubAttachment) {

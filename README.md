@@ -92,13 +92,13 @@ linear-roadmap-sync \
 
 ## Priority Sorting
 
-Linear issues are automatically sorted by priority within each workflow state section:
+Linear issues are automatically sorted by priority within each workflow state section. Linear uses a numerical priority system where lower numbers indicate higher priority:
 
-- **Priority 1 (Urgent)** appears first
-- **Priority 2 (High)** appears second
-- **Priority 3 (Medium)** appears third
-- **Priority 4 (Low)** appears fourth
-- **Priority 0 (No Priority)** or unset priorities appear last
+- **Priority 1 (Urgent)** – Critical issues requiring immediate attention
+- **Priority 2 (High)** – Important issues to address soon
+- **Priority 3 (Medium)** – Standard priority issues
+- **Priority 4 (Low)** – Nice-to-have improvements
+- **Priority 0 (No Priority)** or unset – Unprioritized items appear last
 
 This ensures that the most important work is always visible at the top of each section in your roadmap.
 
@@ -143,8 +143,27 @@ The default template renders issues grouped by workflow state and sorted by prio
 - `{{generatedAt}}` – ISO timestamp of generation
 - `{{#each mergedItems}}...{{/each}}` – Iterate over combined Linear/GitHub items (fields: `linearTicket`, `githubIssue`, `title`)
   - `linearTicket` fields: `identifier`, `title`, `url`, `state`, `workflowState`, `priority`
+    - `workflowState` values: `'backlog'`, `'unstarted'`, `'started'`, `'completed'`, `'canceled'`, `'triage'`
+    - `priority` values: `1` (Urgent), `2` (High), `3` (Medium), `4` (Low), `0` (No Priority), or `undefined`
   - `githubIssue` fields: `number`, `title`, `url`, `state`, `labels`
 - `{{#each githubPulls}}...{{/each}}` – Iterate over GitHub pull requests (fields: `number`, `title`, `url`, `state`, `merged`)
+
+### Custom Template Helpers
+
+The template engine provides a custom Handlebars helper for conditional logic:
+
+- `{{#if (eq a b)}}...{{/if}}` – Compare two values for equality
+
+**Example**: Filter by workflow state:
+```handlebars
+{{#each mergedItems}}
+  {{#if linearTicket}}
+    {{#if (eq linearTicket.workflowState "started")}}
+      - [{{linearTicket.identifier}}]({{linearTicket.url}}): {{title}}
+    {{/if}}
+  {{/if}}
+{{/each}}
+```
 
 ## Development
 
