@@ -9,22 +9,26 @@ A TypeScript CLI tool that generates Markdown roadmap files by aggregating Linea
 ## Core Architecture
 
 ### Data Flow
-1. **Parallel Fetching** (src/index.ts:17-22): Linear tickets, GitHub issues, GitHub PRs, and templates are fetched concurrently using Promise.all
-2. **Template Rendering** (src/template.ts): Simple mustache-style string replacement (intentionally lightweight, not using a full template engine)
-3. **Output**: Either written to file or printed to stdout (dry-run mode)
+1. **Environment Setup** (src/index.ts:13): Dotenv loads `.env` file for automatic `LINEAR_API_KEY` configuration
+2. **Parallel Fetching** (src/index.ts:21-26): Linear tickets, GitHub issues, GitHub PRs, and templates are fetched concurrently using Promise.all
+3. **PR State Filtering** (src/index.ts:28-35): Filter PRs by state (open/closed/merged/all) based on CLI flag
+4. **Issue Linking** (src/index.ts:37-61): Merge Linear tickets with linked GitHub issues into unified roadmap items
+5. **Template Rendering** (src/template.ts:32-42): Handlebars compiles and renders template with security options (strict mode, assumeObjects)
+6. **Output**: Either written to file or printed to stdout (dry-run mode)
 
 ### Module Responsibilities
-- **src/linear.ts**: Linear SDK integration with team resolution and pagination handling
+- **src/linear.ts**: Linear SDK integration with team resolution, pagination handling, and attachment fetching
 - **src/github.ts**: Octokit integration using gh CLI authentication with automatic pagination
-- **src/template.ts**: Basic template loading and rendering with {{placeholder}} syntax
-- **src/types.ts**: Shared TypeScript interfaces across modules
-- **src/index.ts**: CLI orchestration using Commander.js
+- **src/template.ts**: Handlebars template loading and rendering with security configuration
+- **src/types.ts**: Shared TypeScript interfaces including discriminated unions for merged items
+- **src/index.ts**: CLI orchestration using Commander.js, dotenv, and issue linking logic
 
 ### Key Design Patterns
 
 **Authentication Strategy**:
-- Linear: API key via `--linear-api-key` flag or `LINEAR_API_KEY` environment variable
-- GitHub: Reuses `gh` CLI authentication token (src/github.ts:8-23), with singleton Octokit instance (src/github.ts:25-48)
+- **Dotenv Integration** (src/index.ts:13): Automatically loads `.env` file at startup for easy API key management
+- **Linear**: API key via `--linear-api-key` flag or `LINEAR_API_KEY` environment variable (loaded from `.env`)
+- **GitHub**: Reuses `gh` CLI authentication token (src/github.ts:8-23), with singleton Octokit instance (src/github.ts:25-48)
 
 **Pagination Handling**:
 - Linear: Custom `collectAllNodes` helper (src/linear.ts:10-19) for SDK's connection pattern
@@ -89,7 +93,15 @@ linear-roadmap-sync \
 
 - Node.js 18+
 - GitHub CLI (`gh`) must be authenticated before running
-- Linear API key with access to target workspace
+- Linear API key with access to target workspace (can be configured via `.env` file)
+
+## Dependencies
+
+- **@linear/sdk**: Official Linear API client
+- **@octokit/rest**: GitHub REST API client
+- **commander**: CLI argument parsing
+- **dotenv**: Environment variable loading from `.env` files
+- **handlebars**: Template engine for customizable output
 
 ## Important Constraints
 
