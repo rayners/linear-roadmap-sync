@@ -165,6 +165,37 @@ The template engine provides a custom Handlebars helper for conditional logic:
 {{/each}}
 ```
 
+## Testing
+
+The project uses Vitest for testing. Tests cover:
+- **Core business logic**: Priority sorting, workflow state filtering, issue linking
+- **Template rendering**: Handlebars template compilation and data binding
+- **CLI argument parsing**: Input validation and error handling
+- **GitHub issue creation**: Parallel creation with error handling
+
+### Running Tests
+
+```bash
+# Run tests in watch mode (for development)
+npm test
+
+# Run tests once (for CI)
+npm run test:run
+
+# Run tests with coverage report
+npm run test:coverage
+```
+
+### Test Coverage
+
+The test suite includes 37 tests covering:
+- Workflow state filtering (excluding completed/canceled issues)
+- Priority-based sorting with edge cases
+- PR state filtering (open/closed/merged/all)
+- Linear/GitHub issue linking logic
+- Template rendering with various data structures
+- CLI error handling and validation
+
 ## Development
 
 - `npm run build` – Compile TypeScript to `dist/`
@@ -174,4 +205,3 @@ The template engine provides a custom Handlebars helper for conditional logic:
 ## Future Enhancements
 
 - Automatic bidirectional linking between Linear and GitHub (requires Linear API write permissions)
-- Add automated tests and validation tooling
